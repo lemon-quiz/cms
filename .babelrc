@@ -8,6 +8,7 @@
         "idInterpolationPattern": "[sha512:contenthash:base64:6]",
         "extractFromFormatMessageCall": true
       }
-    ]
+    ],
+    ["styled-components", { "ssr": true }]
   ]
 }

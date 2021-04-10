@@ -1,0 +1,17 @@
+[
+  {
+    "name": "Meta",
+    "type": "complex",
+    "children": [
+      {
+        "type": "line",
+        "name": "Title"
+      },
+      {
+        "type": "line",
+        "name": "Header"
+      }
+    ]
+  }
+]
+

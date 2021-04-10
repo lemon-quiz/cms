@@ -1,13 +1,30 @@
-import * as React from 'react';
-import {IntlProvider} from 'react-intl';
-import {polyfill} from '../polyfills';
+import { CssBaseline, ThemeProvider } from '@material-ui/core';
 import App from 'next/app';
+import * as React from 'react';
+import { IntlProvider } from 'react-intl';
 
-function MyApp({Component, pageProps, locale, messages}) {
+import { AppProvider } from '../components/AppContext';
+import { polyfill } from '../polyfills';
+import initServices from '../services/initServices';
+import theme from '../theme/public';
+
+let globalServices = initServices();
+
+function MyApp({
+  Component, pageProps, locale, messages, _store,
+}: any) {
+  console.log(_store);
+
   return (
-    <IntlProvider locale={locale} defaultLocale="en" messages={messages}>
-      <Component {...pageProps} />
-    </IntlProvider>
+    <ThemeProvider theme={theme}>
+      {/* CssBaseline kickstart an elegant, consistent, and simple baseline to build upon. */}
+      <CssBaseline />
+      <AppProvider value={{ ...globalServices }}>
+        <IntlProvider locale={locale} defaultLocale="en" messages={messages}>
+          <Component {...pageProps} />
+        </IntlProvider>
+      </AppProvider>
+    </ThemeProvider>
   );
 }
 
@@ -19,7 +36,7 @@ function MyApp({Component, pageProps, locale, messages}) {
  * @returns {[string, Promise]} A tuple containing the negotiated locale
  * and the promise of fetching the translated messages
  */
-function getMessages(locales: string | string[] = ['en']) {
+function getMessages(locales: string | string[] = ['nl-NL']) {
   if (!Array.isArray(locales)) {
     locales = [locales];
   }
@@ -28,42 +45,28 @@ function getMessages(locales: string | string[] = ['en']) {
   for (let i = 0; i < locales.length && !locale; i++) {
     locale = locales[i];
     switch (locale) {
-      case 'fr':
-        langBundle = import('../compiled-lang/fr.json');
-        break;
-      case 'en-GB':
-        langBundle = import('../compiled-lang/en-GB.json');
-        break;
-      case 'zh-Hans-CN':
-        langBundle = import('../compiled-lang/zh-Hans-CN.json');
-        break;
-      case 'zh-Hant-HK':
-        langBundle = import('../compiled-lang/zh-Hant-HK.json');
+      case 'nl-NL':
+        langBundle = import('../compiled-lang/nl-NL.json');
         break;
       default:
         break;
       // Add more languages
     }
   }
+
   if (!langBundle) {
-    return ['en', import('../compiled-lang/en.json')];
+    return ['nl-NL', import('../compiled-lang/nl-NL.json')];
   }
   return [locale, langBundle];
 }
 
-const getInitialProps: typeof App.getInitialProps = async appContext => {
+const getInitialProps: typeof App.getInitialProps = async (appContext) => {
   const {
-    ctx: {req},
+    router: { locale },
+    ctx: { req },
   } = appContext;
-  const requestedLocales: string | string[] =
-    (req as any)?.locale ||
-    (typeof navigator !== 'undefined' && navigator.languages) ||
-    // IE11
-    (typeof navigator !== 'undefined' && (navigator as any).userLanguage) ||
-    (typeof window !== 'undefined' && (window as any).LOCALE) ||
-    'en';
 
-  const [supportedLocale, messagePromise] = getMessages(requestedLocales);
+  const [supportedLocale, messagePromise] = getMessages(locale);
 
   const [, messages, appProps] = await Promise.all([
     polyfill(supportedLocale),
@@ -71,10 +74,35 @@ const getInitialProps: typeof App.getInitialProps = async appContext => {
     App.getInitialProps(appContext),
   ]);
 
+  let services;
+  if (req) {
+    const { storeService: closeService } = globalServices;
+    closeService.clearAll();
+
+    services = initServices();
+    services.cookiesService.withReq(req);
+    globalServices = services;
+  } else {
+    services = globalServices;
+  }
+
+  const { storeService } = services;
+
+  // eslint-disable-next-line no-underscore-dangle
+  let _store = {};
+  await storeService.export().then((store: any) => {
+    _store = store;
+  });
+
+  if (req) {
+    storeService.completeAll();
+  }
+
   return {
     ...(appProps as any),
     locale: supportedLocale,
     messages: messages.default,
+    _store,
   };
 };
 

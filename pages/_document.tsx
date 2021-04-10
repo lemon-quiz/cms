@@ -1,54 +1,114 @@
+import { ServerStyleSheets } from '@material-ui/core/styles';
 import Document, {
-  Html,
-  Head,
-  Main,
-  NextScript,
-  DocumentContext,
+  Head, Html, Main, NextScript,
 } from 'next/document';
+import React from 'react';
+import { Helmet } from 'react-helmet';
 
-interface Props {
-  locale: string;
-  lang: string;
-  nonce: string;
-}
+import theme from '../theme/public';
 
-class MyDocument extends Document<Props> {
-  static async getInitialProps(ctx: DocumentContext) {
-    const {req} = ctx;
-    const initialProps = await Document.getInitialProps(ctx);
-    const locale = (req as any).locale;
-    return {
-      ...initialProps,
-      locale,
-      lang: locale ? locale.split('-')[0] : undefined,
-      nonce: (req as any).nonce,
-    };
+export default class MyDocument extends Document<any> {
+  // should render on <html>
+  get helmetHtmlAttrComponents() {
+    return this.props.helmet.htmlAttributes.toComponent();
+  }
+
+  // should render on <body>
+  get helmetBodyAttrComponents() {
+    return this.props.helmet.bodyAttributes.toComponent();
+  }
+
+  // should render on <head>
+  get helmetHeadComponents() {
+    return Object.keys(this.props.helmet)
+      .filter((el) => el !== 'htmlAttributes' && el !== 'bodyAttributes')
+      .map((el) => this.props.helmet[el].toComponent());
   }
 
   render() {
-    let scriptEl;
-    if (this.props.locale) {
-      scriptEl = (
-        <script
-          nonce={this.props.nonce}
-          dangerouslySetInnerHTML={{
-            __html: `window.LOCALE="${this.props.locale}"`,
-          }}
-        ></script>
-      );
-    }
-
     return (
-      <Html lang={this.props.lang}>
-        <Head />
-        <body>
-          {scriptEl}
+      <Html {...this.helmetHtmlAttrComponents}>
+        <Head>
+          <meta name="theme-color" content={theme.palette.primary.main} />
+          <link
+            rel="stylesheet"
+            href="https://fonts.googleapis.com/css?family=Roboto:300,400,500,700&display=swap"
+          />
+          <link
+            rel="stylesheet"
+            href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.0.0/animate.compat.css"
+          />
+          {this.helmetHeadComponents}
+        </Head>
+        <body {...this.helmetBodyAttrComponents}>
           <Main />
+          <script
+            dangerouslySetInnerHTML={{
+              __html: this.props.localeDataScript,
+            }}
+          />
           <NextScript />
         </body>
       </Html>
+
     );
   }
 }
 
-export default MyDocument;
+// `getInitialProps` belongs to `_document` (instead of `_app`),
+// it's compatible with server-side generation (SSG).
+MyDocument.getInitialProps = async (ctx) => {
+  // Resolution order
+  //
+  // On the server:
+  // 1. app.getInitialProps
+  // 2. page.getInitialProps
+  // 3. document.getInitialProps
+  // 4. app.render
+  // 5. page.render
+  // 6. document.render
+  //
+  // On the server with error:
+  // 1. document.getInitialProps
+  // 2. app.render
+  // 3. page.render
+  // 4. document.render
+  //
+  // On the client
+  // 1. app.getInitialProps
+  // 2. page.getInitialProps
+  // 3. app.render
+  // 4. page.render
+
+  // Render app and page and get the context of the page with collected side effects.
+  const sheets = new ServerStyleSheets();
+  const originalRenderPage = ctx.renderPage;
+
+  ctx.renderPage = () => originalRenderPage({
+    enhanceApp: (App) => (props) => sheets.collect(<App {...props} />),
+  });
+
+  const initialProps = await Document.getInitialProps(ctx);
+
+  // const documentProps = await super.getInitialProps(...args)
+  // see https://github.com/nfl/react-helmet#server-usage for more information
+  // 'head' was occupied by 'renderPage().head', we cannot use it
+
+  // eslint-disable-next-line no-underscore-dangle,max-len
+  const {
+    locale,
+    localeDataScript,
+    supportedLanguages,
+    // eslint-disable-next-line no-underscore-dangle
+  } = (ctx.req || window.__NEXT_DATA__.props.initialProps);
+
+  return {
+    ...initialProps,
+    locale,
+    localeDataScript,
+    supportedLanguages,
+    helmet: Helmet.renderStatic(),
+    // Styles fragment is rendered after the app and page rendering finish.
+    styles: [...React.Children.toArray(initialProps.styles), sheets.getStyleElement()],
+  };
+};

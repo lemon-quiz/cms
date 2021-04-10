@@ -1,6 +1,7 @@
-import * as React from 'react';
-import {FormattedMessage, FormattedNumber, useIntl} from 'react-intl';
 import Head from 'next/head';
+import * as React from 'react';
+import { FormattedMessage, FormattedNumber, useIntl } from 'react-intl';
+
 import Layout from '../components/Layout';
 
 export default function Home() {
@@ -25,7 +26,7 @@ export default function Home() {
         <FormattedMessage defaultMessage="Hello, World!" />
       </p>
       <p>
-        <FormattedNumber value={1000} />
+        <FormattedNumber value={10000000.34} />
       </p>
     </Layout>
   );
