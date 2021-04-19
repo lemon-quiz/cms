@@ -4,22 +4,21 @@ import {
 
 const page: PageInterface = [
   {
-    name: 'answer_model',
-    type: 'page',
-    exportHandler: ['AnswerModelExporter'],
-  },
-  {
     name: 'Meta',
     type: 'complex',
     zakje: 'wassen',
     mandatory: true,
+    export: ['default', 'index'],
+    users: [],
+    roles: [],
     children: [
       {
-        type: 'line', name: 'page_title', mandatory: true, multiple: true,
+        type: 'line', name: 'page_title', mandatory: true, multiple: true, validator: 'isEmail',
       },
       { type: 'radio', name: 'radio', mandatory: true },
       { type: 'checkbox', name: 'checkbox', mandatory: true },
       { type: 'checkbox', name: 'simba' },
+      { type: 'line', name: 'url', validator: ['isFQDN'] },
     ],
   },
   {

@@ -38,10 +38,12 @@ function MyApp({
  */
 function getMessages(locales: string | string[] = ['nl-NL']) {
   if (!Array.isArray(locales)) {
+    // eslint-disable-next-line no-param-reassign
     locales = [locales];
   }
   let langBundle;
   let locale;
+  // eslint-disable-next-line no-plusplus
   for (let i = 0; i < locales.length && !locale; i++) {
     locale = locales[i];
     switch (locale) {

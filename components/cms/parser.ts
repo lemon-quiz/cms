@@ -7,11 +7,9 @@ import {
 } from './interfaces/template.interface';
 
 export default class Parser {
-  private readonly template: PageInterface;
-
-  private readonly page: PageInterface;
-
   private initPage: PageInterface = [];
+
+  private valueList = {};
 
   /**
    *
@@ -20,6 +18,7 @@ export default class Parser {
    */
   public loadTemplate(template: PageInterface, page: PageInterface) {
     this.initPage = this.parse(template, page);
+    this.valueList = {};
   }
 
   /**
@@ -111,7 +110,6 @@ export default class Parser {
     const { name, type } = siblings[nodeIndex];
     const canMove = Parser.canMoveUpInternal(siblings, nodeIndex, type, name);
 
-    console.log(index);
     if (canMove) {
       const newIndex = (typeof index !== 'undefined' ? index : nodeIndex - 1);
       siblings.splice(newIndex, 0, siblings.splice(nodeIndex, 1)[0]);
@@ -219,6 +217,34 @@ export default class Parser {
     siblings.splice(insertIndex, 0, newNode);
 
     return this.getPage();
+  }
+
+  public deleteNode(path: number[]): PageInterface {
+    const clonePath = [...path];
+    const nodeIndex = clonePath.pop();
+    const { siblings } = this.getFromPath(clonePath, this.initPage);
+
+    if (!this.canDelete(path)) {
+      return this.getPage();
+    }
+
+    siblings.splice(nodeIndex, 1);
+    return this.getPage();
+  }
+
+  public canDelete(path: number[]) {
+    const clonePath = [...path];
+    const nodeIndex = clonePath.pop();
+    const { siblings } = this.getFromPath(clonePath, this.initPage);
+    const { type, name } = siblings[nodeIndex];
+    return Parser.canDeleteNodeInternal(siblings, type, name);
+  }
+
+  private static canDeleteNodeInternal(siblings, type, name): boolean {
+    const filtered = siblings.filter((node) => node.name === name && node.type === type && typeof node.uuid !== 'undefined');
+    const templateNode = siblings.find((node) => node.name === name && node.type === type && typeof node.tuuid !== 'undefined');
+
+    return templateNode.mandatory && filtered.length > 1;
   }
 
   private initNode(node: NodeType) {
@@ -332,5 +358,37 @@ export default class Parser {
 
     // eslint-disable-next-line no-param-reassign
     (parent as NodeType).children = siblings.filter(() => true);
+  }
+
+  public setValue(id, value: any, errors: any) {
+    this.valueList[id] = {
+      id,
+      value,
+      errors,
+    };
+    this.initPage = this.updateNode(this.initPage, id, value);
+  }
+
+  public getValue(id, defaultValue): { value: any, errors: any } {
+    return this.valueList?.[id] ?? { value: defaultValue, errors: null };
+  }
+
+  private updateNode(data: NodeType[], updateUuid: string, value: any): NodeType[] {
+    return data.map((node) => {
+      const { uuid, children } = node;
+
+      if (uuid === updateUuid) {
+        return ({ ...node, value });
+      }
+
+      if (Array.isArray(children)) {
+        return {
+          ...node,
+          children: this.updateNode(children, updateUuid, value),
+        };
+      }
+
+      return node;
+    });
   }
 }

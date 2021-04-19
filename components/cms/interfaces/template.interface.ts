@@ -1,3 +1,8 @@
+export interface ValidatiorOptions {
+  rule: string;
+  params: any[]
+}
+
 export interface NodeInterface {
   type: string;
   name: string;
@@ -5,6 +10,7 @@ export interface NodeInterface {
   multiple?: boolean;
   uuid?: string;
   tuuid?: string;
+  validator?: string | ValidatiorOptions | Array<string | ValidatiorOptions>;
   [key: string]: any;
 }
 

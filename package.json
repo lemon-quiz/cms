@@ -41,7 +41,8 @@
     "react-transition-group": "^4.4.1",
     "rxjs": "^6.6.3",
     "styled-components": "^5.2.1",
-    "uuid": "^8.3.2"
+    "uuid": "^8.3.2",
+    "validator": "^13.5.2"
   },
   "license": "MIT",
   "devDependencies": {

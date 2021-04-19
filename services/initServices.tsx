@@ -7,7 +7,6 @@ import {
 
 import AccountsService from './accounts.service';
 import CacheService from './cache.service';
-import PageService from './page.service';
 import SnackbarService from './snackbar.service';
 
 export default function initServices() {
@@ -18,7 +17,6 @@ export default function initServices() {
 
   const accountsService = new AccountsService(apiInstance, storeService, cookiesService, cacheService);
   const snackbarService = new SnackbarService();
-  const pageService = new PageService();
 
   return {
     cookiesService,
@@ -26,7 +24,6 @@ export default function initServices() {
     accountsService,
     storeService,
     snackbarService,
-    pageService,
   };
 }
 
@@ -36,5 +33,4 @@ export interface ServicesModule {
   accountsService: AccountsService;
   storeService: StoreService;
   snackbarService: SnackbarService;
-  pageService: PageService;
 }
